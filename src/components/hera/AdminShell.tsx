@@ -1,17 +1,40 @@
 import { useState, type ReactNode } from "react";
-import { Link, useRouterState } from "@tanstack/react-router";
-import { Inbox, LayoutDashboard, Menu, X } from "lucide-react";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { Inbox, LayoutDashboard, LogOut, Menu, X } from "lucide-react";
 import { HeraLogo } from "./brand";
 import { cn } from "@/lib/utils";
+import { getSupabaseBrowser } from "@/lib/supabase/browser";
+import { signOutAdmin } from "@/lib/supabase/admin-server";
 
 const nav = [
-  { label: "Onboarding", to: "/admin", icon: LayoutDashboard },
-  { label: "Submissões", to: "/admin", icon: Inbox },
-];
+  { label: "Convites", to: "/admin", icon: LayoutDashboard },
+  { label: "Submissões", to: "/admin/submissions", icon: Inbox },
+] as const;
+
+export function AdminLoading({ message }: { message: string }) {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-background">
+      <p className="text-sm text-muted-foreground">{message}</p>
+    </div>
+  );
+}
 
 export function AdminShell({ title, children }: { title: string; children: ReactNode }) {
   const [open, setOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const navigate = useNavigate();
+
+  async function onLogout() {
+    if (signingOut) return;
+    setSigningOut(true);
+    try {
+      await getSupabaseBrowser().auth.signOut();
+      await signOutAdmin();
+    } finally {
+      await navigate({ to: "/admin/login" });
+    }
+  }
 
   const sidebar = (
     <div className="flex h-full flex-col bg-sidebar px-4 py-6">
@@ -20,7 +43,10 @@ export function AdminShell({ title, children }: { title: string; children: React
       </div>
       <nav className="mt-8 space-y-1">
         {nav.map((item, i) => {
-          const active = i === 0 ? pathname === "/admin" : pathname.startsWith("/admin/submissions");
+          const active =
+            i === 0
+              ? pathname === "/admin" || pathname === "/admin/"
+              : pathname.startsWith("/admin/submissions");
           return (
             <Link
               key={item.label}
@@ -39,8 +65,16 @@ export function AdminShell({ title, children }: { title: string; children: React
           );
         })}
       </nav>
-      <div className="mt-auto rounded-xl bg-sidebar-accent/30 px-4 py-3">
-        <p className="text-xs text-sidebar-foreground/60">Ambiente de demonstração</p>
+      <div className="mt-auto">
+        <button
+          type="button"
+          onClick={() => void onLogout()}
+          disabled={signingOut}
+          className="flex w-full items-center gap-3 rounded-[10px] px-3 py-2.5 text-sm font-medium text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent/40 hover:text-sidebar-foreground disabled:opacity-50"
+        >
+          <LogOut className="h-4 w-4" />
+          {signingOut ? "Saindo..." : "Sair"}
+        </button>
       </div>
     </div>
   );

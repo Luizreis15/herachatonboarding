@@ -24,7 +24,10 @@ export function maskCep(value: string) {
 }
 
 export function maskUf(value: string) {
-  return value.replace(/[^a-zA-Z]/g, "").slice(0, 2).toUpperCase();
+  return value
+    .replace(/[^a-zA-Z]/g, "")
+    .slice(0, 2)
+    .toUpperCase();
 }
 
 export const isEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());

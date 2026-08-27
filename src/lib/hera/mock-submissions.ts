@@ -1,4 +1,6 @@
-import type { Submission } from "./types";
+import type { Submission, SubmissionStatus } from "./types";
+
+export { formatSubmissionCopy, statusLabel } from "./format";
 
 export const mockSubmissions: Submission[] = [
   {
@@ -96,8 +98,13 @@ export const mockSubmissions: Submission[] = [
   },
 ];
 
-export const statusLabel: Record<Submission["status"], string> = {
-  pendente: "Pendente",
-  revisado: "Revisado",
-  criado: "Criado",
-};
+export function getSubmissionById(id: string) {
+  return mockSubmissions.find((submission) => submission.id === id);
+}
+
+export function updateSubmissionStatus(id: string, status: SubmissionStatus) {
+  const submission = getSubmissionById(id);
+  if (!submission) return undefined;
+  submission.status = status;
+  return submission;
+}

@@ -1,5 +1,14 @@
 import { useState } from "react";
-import { ArrowLeft, ArrowRight, Info, Plus, Send, Trash2, LayoutGrid, UserPlus } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Info,
+  Plus,
+  Send,
+  Trash2,
+  LayoutGrid,
+  UserPlus,
+} from "lucide-react";
 import { HeraLogo } from "./brand";
 import { Stepper, STEPS } from "./Stepper";
 import { ReviewSummary } from "./ReviewSummary";
@@ -7,6 +16,7 @@ import { SuccessScreen } from "./SuccessScreen";
 import { Field, HeraButton, HeraCard, HeraInput } from "./ui";
 import { maskCep, maskCnpj, maskPhone, maskUf, isEmail } from "@/lib/hera/masks";
 import { emptyOnboarding, type OnboardingData } from "@/lib/hera/types";
+import { submitOnboarding } from "@/lib/supabase/onboarding";
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 
@@ -16,6 +26,7 @@ export function OnboardingWizard({ token }: { token: string }) {
   const [step, setStep] = useState(0);
   const [sent, setSent] = useState(false);
   const [sending, setSending] = useState(false);
+  const [submitError, setSubmitError] = useState("");
   const [errors, setErrors] = useState<Errors>({});
   const [data, setData] = useState<OnboardingData>(emptyOnboarding);
 
@@ -82,12 +93,18 @@ export function OnboardingWizard({ token }: { token: string }) {
     setMember({ name: "", email: "", sectorId: "" });
   }
 
-  function submit() {
+  async function submit() {
+    if (sending) return;
     setSending(true);
-    setTimeout(() => {
+    setSubmitError("");
+    const result = await submitOnboarding(token, data);
+    if (!result.ok) {
+      setSubmitError(result.message);
       setSending(false);
-      setSent(true);
-    }, 900);
+      return;
+    }
+    setSending(false);
+    setSent(true);
   }
 
   if (sent) return <SuccessScreen />;
@@ -98,7 +115,7 @@ export function OnboardingWizard({ token }: { token: string }) {
         <div className="mx-auto w-full max-w-3xl px-5 py-4 sm:px-8">
           <div className="flex items-center justify-between gap-4">
             <HeraLogo subtitle="Onboarding HeraChat" />
-            <span className="hidden text-xs text-muted-foreground sm:block">
+            <span className="max-w-[46%] truncate text-right text-xs text-muted-foreground">
               Convite <span className="font-medium text-foreground">{token}</span>
             </span>
           </div>
@@ -228,7 +245,8 @@ export function OnboardingWizard({ token }: { token: string }) {
             <div className="mt-6 flex gap-3 rounded-xl border border-primary-soft bg-primary-wash px-4 py-4">
               <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
               <p className="text-sm leading-relaxed text-foreground">
-                O administrador terá acesso total ao sistema e poderá gerenciar usuários e configurações.
+                O administrador terá acesso total ao sistema e poderá gerenciar usuários e
+                configurações.
               </p>
             </div>
           </StepShell>
@@ -278,7 +296,9 @@ export function OnboardingWizard({ token }: { token: string }) {
                         <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary-wash text-xs font-semibold text-primary">
                           {i + 1}
                         </span>
-                        <span className="truncate text-[15px] font-medium text-foreground">{s.name}</span>
+                        <span className="truncate text-[15px] font-medium text-foreground">
+                          {s.name}
+                        </span>
                       </div>
                       <button
                         onClick={() => removeSector(s.id)}
@@ -357,6 +377,9 @@ export function OnboardingWizard({ token }: { token: string }) {
                       <div className="min-w-0">
                         <p className="truncate text-[15px] font-medium text-foreground">{m.name}</p>
                         <p className="truncate text-sm text-muted-foreground">{m.email}</p>
+                        <span className="mt-1 inline-flex rounded-full border border-primary-soft bg-primary-wash px-2.5 py-1 text-xs font-medium text-primary sm:hidden">
+                          {data.sectors.find((s) => s.id === m.sectorId)?.name}
+                        </span>
                       </div>
                       <div className="flex shrink-0 items-center gap-2">
                         <span className="hidden rounded-full border border-primary-soft bg-primary-wash px-2.5 py-1 text-xs font-medium text-primary sm:inline">
@@ -364,7 +387,10 @@ export function OnboardingWizard({ token }: { token: string }) {
                         </span>
                         <button
                           onClick={() =>
-                            setData((d) => ({ ...d, members: d.members.filter((x) => x.id !== m.id) }))
+                            setData((d) => ({
+                              ...d,
+                              members: d.members.filter((x) => x.id !== m.id),
+                            }))
                           }
                           aria-label={`Remover ${m.name}`}
                           className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-destructive/5 hover:text-destructive"
@@ -389,6 +415,15 @@ export function OnboardingWizard({ token }: { token: string }) {
           </StepShell>
         )}
 
+        {submitError ? (
+          <div className="mt-8 rounded-xl border border-destructive/20 bg-destructive/5 px-4 py-4">
+            <p className="text-sm leading-relaxed text-foreground">{submitError}</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Seus dados foram mantidos. Você pode tentar enviar novamente.
+            </p>
+          </div>
+        ) : null}
+
         <div className="mt-10 flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
           {step > 0 ? (
             <HeraButton variant="ghost" onClick={back} className="sm:w-auto">
@@ -405,7 +440,11 @@ export function OnboardingWizard({ token }: { token: string }) {
               <ArrowRight className="h-4 w-4" />
             </HeraButton>
           ) : (
-            <HeraButton onClick={submit} disabled={sending} className="w-full sm:w-auto">
+            <HeraButton
+              onClick={() => void submit()}
+              disabled={sending}
+              className="w-full sm:w-auto"
+            >
               <Send className="h-4 w-4" />
               {sending ? "Enviando..." : "Enviar cadastro"}
             </HeraButton>

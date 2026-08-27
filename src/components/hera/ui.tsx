@@ -1,4 +1,9 @@
-import { forwardRef, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode } from "react";
+import {
+  forwardRef,
+  type ButtonHTMLAttributes,
+  type InputHTMLAttributes,
+  type ReactNode,
+} from "react";
 import { cn } from "@/lib/utils";
 import type { SubmissionStatus } from "@/lib/hera/types";
 
@@ -19,10 +24,13 @@ export const HeraButton = forwardRef<
         "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
         "disabled:cursor-not-allowed disabled:opacity-50",
         block && "w-full",
-        variant === "primary" && "bg-primary text-primary-foreground hover:bg-primary-hover shadow-soft",
-        variant === "secondary" && "border border-border bg-card text-foreground hover:bg-primary-wash",
+        variant === "primary" &&
+          "bg-primary text-primary-foreground hover:bg-primary-hover shadow-soft",
+        variant === "secondary" &&
+          "border border-border bg-card text-foreground hover:bg-primary-wash",
         variant === "ghost" && "text-muted-foreground hover:bg-primary-wash hover:text-primary",
-        variant === "danger" && "border border-border bg-card text-destructive hover:bg-destructive/5",
+        variant === "danger" &&
+          "border border-border bg-card text-destructive hover:bg-destructive/5",
         className,
       )}
       {...props}
@@ -34,7 +42,9 @@ export const HeraButton = forwardRef<
 
 export function HeraCard({ className, children }: { className?: string; children: ReactNode }) {
   return (
-    <div className={cn("rounded-2xl border border-border bg-card shadow-card", className)}>{children}</div>
+    <div className={cn("rounded-2xl border border-border bg-card shadow-card", className)}>
+      {children}
+    </div>
   );
 }
 
@@ -96,7 +106,13 @@ const statusStyles: Record<SubmissionStatus, string> = {
   criado: "bg-success/10 text-success border-success/20",
 };
 
-export function StatusPill({ status, className }: { status: SubmissionStatus; className?: string }) {
+export function StatusPill({
+  status,
+  className,
+}: {
+  status: SubmissionStatus;
+  className?: string;
+}) {
   const label = { pendente: "Pendente", revisado: "Revisado", criado: "Criado" }[status];
   return (
     <span
