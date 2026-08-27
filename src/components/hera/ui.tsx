@@ -19,13 +19,13 @@ export const HeraButton = forwardRef<
     <button
       ref={ref}
       className={cn(
-        "inline-flex items-center justify-center gap-2 rounded-[10px] px-5 text-sm font-medium",
+        "inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl px-5 text-sm font-semibold",
         "h-12 transition-colors duration-150 outline-none",
         "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
         "disabled:cursor-not-allowed disabled:opacity-50",
         block && "w-full",
         variant === "primary" &&
-          "bg-primary text-primary-foreground hover:bg-primary-hover shadow-soft",
+          "bg-primary text-primary-foreground shadow-soft hover:bg-primary-hover",
         variant === "secondary" &&
           "border border-border bg-card text-foreground hover:bg-primary-wash",
         variant === "ghost" && "text-muted-foreground hover:bg-primary-wash hover:text-primary",
@@ -42,7 +42,7 @@ export const HeraButton = forwardRef<
 
 export function HeraCard({ className, children }: { className?: string; children: ReactNode }) {
   return (
-    <div className={cn("rounded-2xl border border-border bg-card shadow-card", className)}>
+    <div className={cn("rounded-3xl border border-border bg-card shadow-card", className)}>
       {children}
     </div>
   );
@@ -56,7 +56,7 @@ export const HeraInput = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLIn
       <input
         ref={ref}
         className={cn(
-          "h-12 w-full rounded-[10px] border border-border bg-card px-4 text-[15px] text-foreground",
+          "h-12 w-full rounded-xl border border-border bg-muted/40 px-4 text-[15px] text-foreground",
           "placeholder:text-muted-foreground/60 transition-shadow duration-150 outline-none",
           "focus:border-primary focus:ring-4 focus:ring-primary/10",
           className,
@@ -101,10 +101,24 @@ export function Field({
 /* --------------------------------- Status ---------------------------------- */
 
 const statusStyles: Record<SubmissionStatus, string> = {
-  pendente: "bg-warning/10 text-warning border-warning/20",
+  pendente: "bg-warning/12 text-warning border-warning/20",
   revisado: "bg-primary-wash text-primary border-primary-soft",
-  criado: "bg-success/10 text-success border-success/20",
+  criado: "bg-success/12 text-success border-success/20",
 };
+
+export function InitialsAvatar({ name, className }: { name: string; className?: string }) {
+  const letter = name.trim().charAt(0).toUpperCase() || "?";
+  return (
+    <span
+      className={cn(
+        "inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-soft text-sm font-bold text-primary",
+        className,
+      )}
+    >
+      {letter}
+    </span>
+  );
+}
 
 export function StatusPill({
   status,

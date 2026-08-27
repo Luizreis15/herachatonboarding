@@ -19,7 +19,15 @@ export function AdminLoading({ message }: { message: string }) {
   );
 }
 
-export function AdminShell({ title, children }: { title: string; children: ReactNode }) {
+export function AdminShell({
+  title,
+  subtitle,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  children: ReactNode;
+}) {
   const [open, setOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -37,11 +45,11 @@ export function AdminShell({ title, children }: { title: string; children: React
   }
 
   const sidebar = (
-    <div className="flex h-full flex-col bg-sidebar px-4 py-6">
+    <div className="flex h-full flex-col bg-linear-to-b from-[#3d2266] to-sidebar px-4 py-7">
       <div className="px-2">
         <HeraLogo invert subtitle="Painel interno" />
       </div>
-      <nav className="mt-8 space-y-1">
+      <nav className="mt-10 space-y-1">
         {nav.map((item, i) => {
           const active =
             i === 0
@@ -53,10 +61,10 @@ export function AdminShell({ title, children }: { title: string; children: React
               to={item.to}
               onClick={() => setOpen(false)}
               className={cn(
-                "flex items-center gap-3 rounded-[10px] px-3 py-2.5 text-sm font-medium transition-colors",
+                "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors",
                 active
-                  ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                  : "text-sidebar-foreground/70 hover:bg-sidebar-accent/40 hover:text-sidebar-foreground",
+                  ? "bg-white/12 text-white"
+                  : "text-white/65 hover:bg-white/8 hover:text-white",
               )}
             >
               <item.icon className="h-4 w-4" />
@@ -65,12 +73,12 @@ export function AdminShell({ title, children }: { title: string; children: React
           );
         })}
       </nav>
-      <div className="mt-auto">
+      <div className="mt-auto space-y-3">
         <button
           type="button"
           onClick={() => void onLogout()}
           disabled={signingOut}
-          className="flex w-full items-center gap-3 rounded-[10px] px-3 py-2.5 text-sm font-medium text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent/40 hover:text-sidebar-foreground disabled:opacity-50"
+          className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-white/65 transition-colors hover:bg-white/8 hover:text-white disabled:opacity-50"
         >
           <LogOut className="h-4 w-4" />
           {signingOut ? "Saindo..." : "Sair"}
@@ -85,12 +93,12 @@ export function AdminShell({ title, children }: { title: string; children: React
 
       {open ? (
         <div className="fixed inset-0 z-40 lg:hidden">
-          <div className="absolute inset-0 bg-foreground/40" onClick={() => setOpen(false)} />
+          <div className="absolute inset-0 bg-primary-deep/50" onClick={() => setOpen(false)} />
           <div className="absolute inset-y-0 left-0 w-64">{sidebar}</div>
           <button
             onClick={() => setOpen(false)}
             aria-label="Fechar menu"
-            className="absolute top-5 left-[17rem] rounded-lg bg-card p-2 text-foreground"
+            className="absolute top-5 left-[17rem] rounded-xl bg-card p-2 text-foreground shadow-card"
           >
             <X className="h-4 w-4" />
           </button>
@@ -98,19 +106,29 @@ export function AdminShell({ title, children }: { title: string; children: React
       ) : null}
 
       <div className="lg:pl-64">
-        <header className="sticky top-0 z-30 border-b border-border bg-background/85 backdrop-blur-md">
-          <div className="flex items-center gap-3 px-5 py-4 sm:px-8">
+        <header className="sticky top-0 z-30 border-b border-border bg-background/90 backdrop-blur-md lg:hidden">
+          <div className="flex items-center gap-3 px-5 py-4">
             <button
               onClick={() => setOpen(true)}
               aria-label="Abrir menu"
-              className="rounded-lg border border-border bg-card p-2 text-foreground lg:hidden"
+              className="rounded-xl border border-border bg-card p-2 text-foreground"
             >
               <Menu className="h-4 w-4" />
             </button>
-            <h1 className="text-base font-semibold text-foreground sm:text-lg">{title}</h1>
+            <h1 className="text-base font-bold text-foreground">{title}</h1>
           </div>
         </header>
-        <main className="px-5 py-8 sm:px-8">{children}</main>
+        <main className="px-5 py-8 sm:px-8 lg:px-10 lg:py-10">
+          <div className="mb-8 hidden lg:block">
+            <h1 className="text-3xl font-extrabold tracking-tight text-foreground">{title}</h1>
+            {subtitle ? (
+              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+                {subtitle}
+              </p>
+            ) : null}
+          </div>
+          {children}
+        </main>
       </div>
     </div>
   );

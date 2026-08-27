@@ -94,7 +94,7 @@ function AdminSubmissionDetailPage() {
   }
 
   return (
-    <AdminShell title={submission.company}>
+    <AdminShell title={submission.company} subtitle={`Responsável: ${submission.responsible}`}>
       <div className="mx-auto max-w-3xl">
         <HeraCard className="mb-6 px-5 py-5 sm:px-6">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">

@@ -1,9 +1,9 @@
 import { type FormEvent, useState } from "react";
-import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect } from "@tanstack/react-router";
+import { ArrowLeft, LogIn } from "lucide-react";
 import { HeraLogo } from "@/components/hera/brand";
-import { Field, HeraButton, HeraCard, HeraInput } from "@/components/hera/ui";
-import { getSupabaseBrowser } from "@/lib/supabase/browser";
-import { fetchAdminSession } from "@/lib/supabase/admin-server";
+import { Field, HeraButton, HeraInput } from "@/components/hera/ui";
+import { fetchAdminSession, loginAdmin } from "@/lib/supabase/admin-server";
 
 type LoginSearch = {
   error?: "denied";
@@ -21,16 +21,7 @@ export const Route = createFileRoute("/admin/login")({
   component: AdminLoginPage,
 });
 
-function loginErrorMessage(message: string) {
-  const value = message.toLowerCase();
-  if (value.includes("invalid login credentials")) return "Email ou senha inválidos.";
-  if (value.includes("email not confirmed")) return "Confirme seu email antes de entrar.";
-  if (value.includes("too many requests")) return "Muitas tentativas. Aguarde um momento.";
-  return "Não foi possível entrar. Tente novamente.";
-}
-
 function AdminLoginPage() {
-  const navigate = useNavigate();
   const search = Route.useSearch();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(
@@ -52,23 +43,16 @@ function AdminLoginPage() {
     setError("");
 
     try {
-      const { error: signInError } = await getSupabaseBrowser().auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (signInError) {
-        setError(loginErrorMessage(signInError.message));
+      const result = await loginAdmin({ data: { email, password } });
+      if (result.status === "error") {
+        setError(result.message);
         return;
       }
-
-      const session = await fetchAdminSession();
-      if (session.status !== "ok") {
+      if (result.status === "forbidden") {
         setError("Você não tem permissão para acessar o painel.");
         return;
       }
-
-      await navigate({ to: "/admin" });
+      window.location.assign("/admin");
     } catch {
       setError("Não foi possível entrar. Tente novamente.");
     } finally {
@@ -77,55 +61,78 @@ function AdminLoginPage() {
   }
 
   return (
-    <div className="relative flex min-h-screen flex-col overflow-hidden bg-background">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -top-40 -right-32 h-96 w-96 rounded-full bg-primary-soft/50 blur-3xl"
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -bottom-48 -left-24 h-96 w-96 rounded-full bg-primary-wash blur-3xl"
-      />
-
-      <header className="relative z-10 px-6 py-6 sm:px-10">
-        <HeraLogo subtitle="Painel interno" />
-      </header>
-
-      <main className="relative z-10 flex flex-1 items-center justify-center px-6 pb-24">
-        <HeraCard className="w-full max-w-md p-6 sm:p-8">
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Entrar</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Acesso da equipe Digital Hera ao painel de onboarding.
+    <div className="grid min-h-screen lg:grid-cols-2">
+      <section className="relative hidden overflow-hidden bg-linear-to-b from-primary to-primary-deep px-10 py-10 text-white lg:flex lg:flex-col">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -top-24 -left-16 h-80 w-80 rounded-full bg-primary-vivid/30 blur-3xl"
+        />
+        <HeraLogo invert subtitle="Painel interno" />
+        <div className="relative z-10 my-auto max-w-md">
+          <h1 className="text-4xl font-extrabold tracking-tight xl:text-5xl">
+            Cada onboarding vira um ambiente pronto.
+          </h1>
+          <p className="mt-5 text-[15px] leading-relaxed text-white/75">
+            Acompanhe as submissões recebidas pelos links individuais, revise os dados e prepare o
+            HeraChat de cada cliente.
           </p>
+        </div>
+        <p className="relative z-10 text-xs text-white/50">
+          Digital Hera — tecnologia de atendimento
+        </p>
+      </section>
 
-          <form onSubmit={(event) => void onSubmit(event)} className="mt-8 space-y-5">
-            <Field label="Email" required>
-              <HeraInput
-                type="email"
-                name="email"
-                autoComplete="username"
-                placeholder="equipe@digitalhera.com"
-                required
-                disabled={loading}
-              />
-            </Field>
-            <Field label="Senha" required>
-              <HeraInput
-                type="password"
-                name="password"
-                autoComplete="current-password"
-                placeholder="••••••••"
-                required
-                disabled={loading}
-              />
-            </Field>
-            {error ? <p className="text-sm font-medium text-destructive">{error}</p> : null}
-            <HeraButton type="submit" className="w-full" disabled={loading}>
-              {loading ? "Entrando..." : "Entrar"}
-            </HeraButton>
-          </form>
-        </HeraCard>
-      </main>
+      <section className="relative flex flex-col bg-background">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute top-1/3 left-1/2 h-80 w-80 -translate-x-1/2 rounded-full bg-white blur-3xl"
+        />
+        <header className="relative z-10 px-6 py-6 lg:hidden">
+          <HeraLogo subtitle="Painel interno" />
+        </header>
+        <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-6 py-12">
+          <div className="w-full max-w-md rounded-3xl border border-border bg-card p-7 shadow-float sm:p-9">
+            <h2 className="text-3xl font-extrabold tracking-tight text-foreground">Entrar</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Acesso restrito à equipe da Digital Hera
+            </p>
+            <form onSubmit={(event) => void onSubmit(event)} className="mt-8 space-y-5">
+              <Field label="Email" required>
+                <HeraInput
+                  type="email"
+                  name="email"
+                  autoComplete="username"
+                  placeholder="voce@digitalhera.com"
+                  required
+                  disabled={loading}
+                />
+              </Field>
+              <Field label="Senha" required>
+                <HeraInput
+                  type="password"
+                  name="password"
+                  autoComplete="current-password"
+                  placeholder="••••••••"
+                  required
+                  disabled={loading}
+                />
+              </Field>
+              {error ? <p className="text-sm font-medium text-destructive">{error}</p> : null}
+              <HeraButton type="submit" className="w-full" disabled={loading}>
+                <LogIn className="h-4 w-4" />
+                {loading ? "Entrando..." : "Entrar no painel"}
+              </HeraButton>
+            </form>
+          </div>
+          <Link
+            to="/"
+            className="mt-8 inline-flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Voltar para o site
+          </Link>
+        </div>
+      </section>
     </div>
   );
 }

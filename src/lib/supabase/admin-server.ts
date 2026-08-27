@@ -15,6 +15,18 @@ import type { Database } from "./database";
 
 const submissionStatusSchema = z.enum(["pendente", "revisado", "criado"]);
 const idSchema = z.string().min(1);
+const loginSchema = z.object({
+  email: z.string().trim().email(),
+  password: z.string().min(1),
+});
+
+function mapLoginError(message: string) {
+  const value = message.toLowerCase();
+  if (value.includes("invalid login credentials")) return "Email ou senha inválidos.";
+  if (value.includes("email not confirmed")) return "Confirme seu email antes de entrar.";
+  if (value.includes("too many requests")) return "Muitas tentativas. Aguarde um momento.";
+  return "Não foi possível entrar. Tente novamente.";
+}
 
 export type AdminSession =
   { status: "anonymous" } | { status: "forbidden" } | { status: "ok"; admin: AdminProfile };
@@ -53,6 +65,32 @@ export const signOutAdmin = createServerFn({ method: "POST" }).handler(async () 
   await supabase.auth.signOut();
   return { ok: true as const };
 });
+
+export const loginAdmin = createServerFn({ method: "POST" })
+  .validator(loginSchema)
+  .handler(async ({ data }) => {
+    const { getSupabaseServer } = await import("./server");
+    const supabase = getSupabaseServer();
+    const { data: auth, error } = await supabase.auth.signInWithPassword({
+      email: data.email.toLowerCase(),
+      password: data.password,
+    });
+
+    if (error || !auth.user) {
+      return {
+        status: "error" as const,
+        message: mapLoginError(error?.message ?? ""),
+      };
+    }
+
+    const admin = await fetchAdminProfile(supabase, auth.user.id);
+    if (!admin) {
+      await supabase.auth.signOut();
+      return { status: "forbidden" as const };
+    }
+
+    return { status: "ok" as const };
+  });
 
 export async function ensureAdminRoute() {
   const session = await fetchAdminSession();

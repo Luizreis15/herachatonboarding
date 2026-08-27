@@ -3,7 +3,7 @@ import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { Copy } from "lucide-react";
 import { toast } from "sonner";
 import { AdminLoading, AdminShell } from "@/components/hera/AdminShell";
-import { Field, HeraButton, HeraCard, HeraInput } from "@/components/hera/ui";
+import { Field, HeraButton, HeraCard, HeraInput, InitialsAvatar } from "@/components/hera/ui";
 import { createAdminInvite, listAdminInvites } from "@/lib/supabase/admin-server";
 import type { AdminInviteListItem } from "@/lib/supabase/admin";
 
@@ -79,59 +79,72 @@ function AdminInvitesPage() {
   }
 
   return (
-    <AdminShell title="Convites">
-      <div className="mx-auto max-w-3xl space-y-6">
-        <HeraCard className="px-5 py-5 sm:px-6">
-          <h2 className="text-[15px] font-semibold text-foreground">Nova empresa</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Gera o link para o responsável preencher o onboarding.
-          </p>
-          <form
-            onSubmit={(event) => void onCreate(event)}
-            className="mt-5 grid gap-4 sm:grid-cols-2"
-          >
-            <Field label="Empresa" required className="sm:col-span-1">
-              <HeraInput
-                name="empresaNome"
-                placeholder="Nome da empresa"
-                required
-                disabled={saving}
-              />
-            </Field>
-            <Field label="Responsável" className="sm:col-span-1">
-              <HeraInput
-                name="clienteNome"
-                placeholder="Nome de quem vai receber o link"
-                disabled={saving}
-              />
-            </Field>
-            <div className="sm:col-span-2">
-              <HeraButton type="submit" disabled={saving}>
-                {saving ? "Gerando..." : "Gerar link"}
-              </HeraButton>
-            </div>
-          </form>
-        </HeraCard>
-
-        {created ? (
-          <HeraCard className="px-5 py-5 sm:px-6">
-            <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-              Link gerado
+    <AdminShell
+      title="Convites"
+      subtitle="Cadastre a empresa, gere o link individual e envie ao responsável."
+    >
+      <div className="space-y-6">
+        <div className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
+          <HeraCard className="px-5 py-6 sm:px-7">
+            <h2 className="text-lg font-bold tracking-tight text-foreground">Nova empresa</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Gera o link para o responsável preencher o onboarding.
             </p>
-            <p className="mt-2 text-[15px] font-semibold text-foreground">{created.company}</p>
-            <p className="mt-3 break-all text-sm text-muted-foreground">
-              {inviteUrl(created.token)}
-            </p>
-            <HeraButton
-              variant="secondary"
-              className="mt-4"
-              onClick={() => void copyLink(created.token)}
+            <form
+              onSubmit={(event) => void onCreate(event)}
+              className="mt-6 grid gap-4 sm:grid-cols-2"
             >
-              <Copy className="h-4 w-4" />
-              Copiar link
-            </HeraButton>
+              <Field label="Empresa" required className="sm:col-span-1">
+                <HeraInput
+                  name="empresaNome"
+                  placeholder="Nome da empresa"
+                  required
+                  disabled={saving}
+                />
+              </Field>
+              <Field label="Responsável" className="sm:col-span-1">
+                <HeraInput
+                  name="clienteNome"
+                  placeholder="Nome de quem vai receber o link"
+                  disabled={saving}
+                />
+              </Field>
+              <div className="sm:col-span-2">
+                <HeraButton type="submit" disabled={saving}>
+                  {saving ? "Gerando..." : "Gerar link"}
+                </HeraButton>
+              </div>
+            </form>
           </HeraCard>
-        ) : null}
+
+          {created ? (
+            <HeraCard className="border-0 bg-primary px-5 py-6 text-primary-foreground sm:px-7">
+              <p className="text-[11px] font-bold tracking-[0.14em] text-primary-foreground/70 uppercase">
+                Link gerado
+              </p>
+              <p className="mt-3 text-xl font-extrabold tracking-tight">{created.company}</p>
+              <p className="mt-3 break-all text-sm text-primary-foreground/80">
+                {inviteUrl(created.token)}
+              </p>
+              <HeraButton
+                variant="secondary"
+                className="mt-6 border-0 bg-white text-primary hover:bg-primary-wash"
+                onClick={() => void copyLink(created.token)}
+              >
+                <Copy className="h-4 w-4" />
+                Copiar link
+              </HeraButton>
+            </HeraCard>
+          ) : (
+            <HeraCard className="flex flex-col justify-center border-0 bg-primary-wash px-5 py-6 sm:px-7">
+              <p className="text-sm font-semibold text-primary">Como funciona</p>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                O responsável abre o link, preenche empresa, setores e usuários. A submissão aparece
+                no painel para a equipe revisar.
+              </p>
+            </HeraCard>
+          )}
+        </div>
 
         {!result.ok ? (
           <HeraCard className="px-6 py-10 text-center">
@@ -146,17 +159,18 @@ function AdminInvitesPage() {
             <p className="mt-1 text-sm text-muted-foreground">Cadastre a primeira empresa acima.</p>
           </HeraCard>
         ) : (
-          <ul className="space-y-3">
+          <ul className="divide-y divide-border overflow-hidden rounded-3xl border border-border bg-card shadow-card">
             {invites.map((invite) => (
-              <li key={invite.id}>
-                <HeraCard className="px-5 py-4 sm:px-6">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                    <div className="min-w-0 flex-1">
+              <li key={invite.id} className="px-5 py-4 sm:px-6">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                  <div className="flex min-w-0 flex-1 items-center gap-3">
+                    <InitialsAvatar name={invite.company} />
+                    <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-                        <p className="truncate text-[15px] font-semibold text-foreground">
+                        <p className="truncate text-[15px] font-bold text-foreground">
                           {invite.company}
                         </p>
-                        <span className="rounded-full border border-border px-2.5 py-1 text-xs font-medium text-muted-foreground">
+                        <span className="rounded-full border border-border px-2.5 py-1 text-xs font-semibold text-muted-foreground">
                           {inviteStatusLabel[invite.status]}
                         </span>
                       </div>
@@ -166,16 +180,16 @@ function AdminInvitesPage() {
                         {invite.date}
                       </p>
                     </div>
-                    <HeraButton
-                      variant="secondary"
-                      className="w-full sm:w-auto"
-                      onClick={() => void copyLink(invite.token)}
-                    >
-                      <Copy className="h-4 w-4" />
-                      Copiar link
-                    </HeraButton>
                   </div>
-                </HeraCard>
+                  <HeraButton
+                    variant="secondary"
+                    className="w-full sm:w-auto"
+                    onClick={() => void copyLink(invite.token)}
+                  >
+                    <Copy className="h-4 w-4" />
+                    Copiar link
+                  </HeraButton>
+                </div>
               </li>
             ))}
           </ul>

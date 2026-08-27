@@ -110,7 +110,11 @@ export function OnboardingWizard({ token }: { token: string }) {
   if (sent) return <SuccessScreen />;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="relative min-h-screen overflow-hidden bg-background">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -top-32 right-[-6rem] h-80 w-80 rounded-full bg-primary-soft/60 blur-3xl"
+      />
       <header className="sticky top-0 z-20 border-b border-border bg-background/85 backdrop-blur-md">
         <div className="mx-auto w-full max-w-3xl px-5 py-4 sm:px-8">
           <div className="flex items-center justify-between gap-4">
@@ -466,7 +470,9 @@ function StepShell({
 }) {
   return (
     <section>
-      <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">{title}</h1>
+      <h1 className="text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
+        {title}
+      </h1>
       <p className="mt-2 text-[15px] text-muted-foreground">{description}</p>
       <div className="mt-8">{children}</div>
     </section>
