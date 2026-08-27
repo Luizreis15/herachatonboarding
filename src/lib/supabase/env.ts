@@ -3,7 +3,12 @@ function readPublicEnv(name: "VITE_SUPABASE_URL" | "VITE_SUPABASE_PUBLISHABLE_KE
     name === "VITE_SUPABASE_URL"
       ? import.meta.env.VITE_SUPABASE_URL
       : import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-  const fromProcess = typeof process === "undefined" ? undefined : process.env[name];
+  const fromProcess =
+    typeof process === "undefined"
+      ? undefined
+      : name === "VITE_SUPABASE_URL"
+        ? process.env.VITE_SUPABASE_URL
+        : process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
   const value = [fromVite, fromProcess].find((item) => typeof item === "string" && item.trim());
   return value?.trim() ?? "";
 }

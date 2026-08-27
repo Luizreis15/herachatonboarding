@@ -1,5 +1,5 @@
 import { type FormEvent, useState } from "react";
-import { createFileRoute, Link, redirect } from "@tanstack/react-router";
+import { createFileRoute, Link, isRedirect, redirect } from "@tanstack/react-router";
 import { ArrowLeft, LogIn } from "lucide-react";
 import { HeraLogo } from "@/components/hera/brand";
 import { Field, HeraButton, HeraInput } from "@/components/hera/ui";
@@ -13,9 +13,13 @@ export const Route = createFileRoute("/admin/login")({
   validateSearch: (search: Record<string, unknown>): LoginSearch =>
     search["error"] === "denied" ? { error: "denied" } : {},
   beforeLoad: async () => {
-    const session = await fetchAdminSession();
-    if (session.status === "ok") {
-      throw redirect({ to: "/admin" });
+    try {
+      const session = await fetchAdminSession();
+      if (session.status === "ok") {
+        throw redirect({ to: "/admin" });
+      }
+    } catch (error) {
+      if (isRedirect(error)) throw error;
     }
   },
   component: AdminLoginPage,
