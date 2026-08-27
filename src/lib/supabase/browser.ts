@@ -12,7 +12,13 @@ export function getSupabaseBrowser() {
 
   if (!browserClient) {
     const { url, publishableKey } = getSupabasePublicEnv();
-    browserClient = createBrowserClient<Database>(url, publishableKey);
+    browserClient = createBrowserClient<Database>(url, publishableKey, {
+      cookieOptions: {
+        path: "/",
+        sameSite: "lax",
+        secure: window.location.protocol === "https:",
+      },
+    });
   }
 
   return browserClient;

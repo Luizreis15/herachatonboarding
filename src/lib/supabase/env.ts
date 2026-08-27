@@ -1,15 +1,25 @@
+function readRuntimeEnv(key: string) {
+  try {
+    const env = globalThis.process?.env;
+    const value = env?.[key];
+    return typeof value === "string" ? value.trim() : "";
+  } catch {
+    return "";
+  }
+}
+
 function readPublicEnv(name: "VITE_SUPABASE_URL" | "VITE_SUPABASE_PUBLISHABLE_KEY") {
   const fromVite =
     name === "VITE_SUPABASE_URL"
       ? import.meta.env.VITE_SUPABASE_URL
       : import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-  const fromProcess =
-    typeof process === "undefined"
-      ? undefined
-      : name === "VITE_SUPABASE_URL"
-        ? process.env.VITE_SUPABASE_URL
-        : process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-  const value = [fromVite, fromProcess].find((item) => typeof item === "string" && item.trim());
+  const aliases =
+    name === "VITE_SUPABASE_URL"
+      ? ["VITE_SUPABASE_URL", "SUPABASE_URL"]
+      : ["VITE_SUPABASE_PUBLISHABLE_KEY", "VITE_SUPABASE_ANON_KEY", "SUPABASE_ANON_KEY"];
+  const value = [fromVite, ...aliases.map(readRuntimeEnv)].find(
+    (item) => typeof item === "string" && item.trim(),
+  );
   return value?.trim() ?? "";
 }
 

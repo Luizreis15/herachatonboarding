@@ -3,7 +3,8 @@ import { createFileRoute, Link, isRedirect, redirect } from "@tanstack/react-rou
 import { ArrowLeft, LogIn } from "lucide-react";
 import { HeraLogo } from "@/components/hera/brand";
 import { Field, HeraButton, HeraInput } from "@/components/hera/ui";
-import { fetchAdminSession, loginAdmin } from "@/lib/supabase/admin-server";
+import { fetchAdminSession } from "@/lib/supabase/admin-server";
+import { getSupabaseBrowser } from "@/lib/supabase/browser";
 
 type LoginSearch = {
   error?: "denied";
@@ -24,6 +25,17 @@ export const Route = createFileRoute("/admin/login")({
   },
   component: AdminLoginPage,
 });
+
+function mapClientLoginError(message: string) {
+  const value = message.toLowerCase();
+  if (value.includes("invalid login credentials")) return "Email ou senha inválidos.";
+  if (value.includes("email not confirmed")) return "Confirme seu email antes de entrar.";
+  if (value.includes("too many requests")) return "Muitas tentativas. Aguarde um momento.";
+  if (value.includes("vite_supabase") || value.includes("defina vite")) {
+    return "Configuração do servidor incompleta. Tente de novo em instantes.";
+  }
+  return "Não foi possível entrar. Tente novamente.";
+}
 
 function AdminLoginPage() {
   const search = Route.useSearch();
@@ -47,15 +59,29 @@ function AdminLoginPage() {
     setError("");
 
     try {
-      const result = await loginAdmin({ data: { email, password } });
-      if (result.status === "error") {
-        setError(result.message);
+      const supabase = getSupabaseBrowser();
+      const { data: auth, error: authError } = await supabase.auth.signInWithPassword({
+        email: email.toLowerCase(),
+        password,
+      });
+
+      if (authError || !auth.user) {
+        setError(mapClientLoginError(authError?.message ?? ""));
         return;
       }
-      if (result.status === "forbidden") {
+
+      const session = await fetchAdminSession();
+      if (session.status === "forbidden") {
+        await supabase.auth.signOut();
         setError("Você não tem permissão para acessar o painel.");
         return;
       }
+      if (session.status !== "ok") {
+        await supabase.auth.signOut();
+        setError("Não foi possível validar a sessão. Recarregue a página e tente de novo.");
+        return;
+      }
+
       window.location.assign("/admin");
     } catch (error) {
       const message = error instanceof Error ? error.message.toLowerCase() : "";
@@ -63,7 +89,7 @@ function AdminLoginPage() {
         setError("Não foi possível validar a sessão. Recarregue a página e tente de novo.");
         return;
       }
-      setError("Não foi possível entrar. Tente novamente.");
+      setError(mapClientLoginError(error instanceof Error ? error.message : ""));
     } finally {
       setLoading(false);
     }

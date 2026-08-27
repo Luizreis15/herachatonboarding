@@ -25,6 +25,12 @@ function mapLoginError(message: string) {
   if (value.includes("invalid login credentials")) return "Email ou senha inválidos.";
   if (value.includes("email not confirmed")) return "Confirme seu email antes de entrar.";
   if (value.includes("too many requests")) return "Muitas tentativas. Aguarde um momento.";
+  if (value.includes("vite_supabase") || value.includes("defina vite")) {
+    return "Configuração do servidor incompleta. Tente de novo em instantes.";
+  }
+  if (value.includes("cookie") || value.includes("maxage") || value.includes("samesite")) {
+    return "Não foi possível gravar a sessão. Recarregue a página e tente de novo.";
+  }
   return "Não foi possível entrar. Tente novamente.";
 }
 
@@ -95,7 +101,7 @@ export const loginAdmin = createServerFn({ method: "POST" })
       console.error(error);
       return {
         status: "error" as const,
-        message: "Não foi possível entrar. Tente novamente.",
+        message: mapLoginError(error instanceof Error ? error.message : ""),
       };
     }
   });

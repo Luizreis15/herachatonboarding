@@ -2,9 +2,24 @@ import { createStart, createCsrfMiddleware, createMiddleware } from "@tanstack/r
 
 import { renderErrorPage } from "./lib/error-page";
 
+function responseFromMiddlewareResult(result: unknown): Response | undefined {
+  if (result instanceof Response) return result;
+  if (result && typeof result === "object" && "response" in result) {
+    const response = (result as { response?: unknown }).response;
+    if (response instanceof Response) return response;
+  }
+  return undefined;
+}
+
 const errorMiddleware = createMiddleware().server(async ({ next }) => {
   try {
-    return await next();
+    const result = await next();
+    const response = responseFromMiddlewareResult(result);
+    if (response) {
+      const { copySessionCookies } = await import("./lib/supabase/server");
+      copySessionCookies(response);
+    }
+    return result;
   } catch (error) {
     if (error != null && typeof error === "object" && "statusCode" in error) {
       throw error;

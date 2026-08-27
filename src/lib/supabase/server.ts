@@ -1,5 +1,5 @@
 import { createServerClient } from "@supabase/ssr";
-import { getCookies, setCookie, setResponseHeader } from "@tanstack/react-start/server";
+import { getCookies, getResponse, setCookie, setResponseHeader } from "@tanstack/react-start/server";
 import type { Database } from "./database";
 import { getSupabasePublicEnv } from "./env";
 
@@ -11,6 +11,15 @@ function toSameSite(value: unknown): CookieSameSite {
   return "lax";
 }
 
+function toExpires(value: unknown): Date | undefined {
+  if (value instanceof Date && Number.isFinite(value.valueOf())) return value;
+  if (typeof value === "string" || typeof value === "number") {
+    const date = new Date(value);
+    if (Number.isFinite(date.valueOf())) return date;
+  }
+  return undefined;
+}
+
 function toCookieOptions(options?: Record<string, unknown>) {
   const sameSite = toSameSite(options?.["sameSite"]);
   const secure =
@@ -18,9 +27,9 @@ function toCookieOptions(options?: Record<string, unknown>) {
       ? true
       : Boolean(options?.["secure"] ?? process.env.NODE_ENV === "production");
   const maxAge = options?.["maxAge"];
-  const expires = options?.["expires"];
   const domain = options?.["domain"];
   const path = options?.["path"];
+  const expires = toExpires(options?.["expires"]);
 
   return {
     path: typeof path === "string" && path ? path : "/",
@@ -31,8 +40,40 @@ function toCookieOptions(options?: Record<string, unknown>) {
     ...(typeof maxAge === "number" && Number.isFinite(maxAge)
       ? { maxAge: Math.trunc(maxAge) }
       : {}),
-    ...(expires instanceof Date ? { expires } : {}),
+    ...(expires ? { expires } : {}),
   };
+}
+
+function writeCookie(name: string, value: string, options?: Record<string, unknown>) {
+  const cookieOptions = toCookieOptions(options);
+  try {
+    setCookie(name, value, cookieOptions);
+    return;
+  } catch (error) {
+    console.error(error);
+  }
+
+  const parts = [`${encodeURIComponent(name)}=${encodeURIComponent(value)}`, `Path=${cookieOptions.path}`];
+  if (cookieOptions.maxAge != null) parts.push(`Max-Age=${cookieOptions.maxAge}`);
+  if (cookieOptions.expires) parts.push(`Expires=${cookieOptions.expires.toUTCString()}`);
+  if (cookieOptions.domain) parts.push(`Domain=${cookieOptions.domain}`);
+  if (cookieOptions.httpOnly) parts.push("HttpOnly");
+  if (cookieOptions.secure) parts.push("Secure");
+  parts.push(`SameSite=${cookieOptions.sameSite[0].toUpperCase()}${cookieOptions.sameSite.slice(1)}`);
+  getResponse().headers.append("set-cookie", parts.join("; "));
+}
+
+export function copySessionCookies(response: Response) {
+  try {
+    const cookies = getResponse().headers.getSetCookie();
+    if (cookies.length === 0) return;
+    const existing = new Set(response.headers.getSetCookie());
+    for (const cookie of cookies) {
+      if (!existing.has(cookie)) response.headers.append("set-cookie", cookie);
+    }
+  } catch {
+    // Request context is missing outside a server handler.
+  }
 }
 
 export function getSupabaseServer() {
@@ -50,7 +91,7 @@ export function getSupabaseServer() {
       },
       setAll(cookies, headers) {
         for (const cookie of cookies) {
-          setCookie(cookie.name, cookie.value, toCookieOptions(cookie.options));
+          writeCookie(cookie.name, cookie.value, cookie.options);
         }
         for (const [name, value] of Object.entries(headers)) {
           setResponseHeader(name, value);
