@@ -23,6 +23,22 @@ const errorMiddleware = createMiddleware().server(async ({ next }) => {
 const csrfMiddleware = createCsrfMiddleware({
   filter: (ctx) => ctx.handlerType === "serverFn",
   secFetchSite: ["same-origin", "same-site"],
+  origin: (origin, ctx) => {
+    try {
+      const originHost = new URL(origin).host;
+      const requestHost = new URL(ctx.request.url).host;
+      const forwarded = (
+        ctx.request.headers.get("x-forwarded-host") ??
+        ctx.request.headers.get("host") ??
+        ""
+      )
+        .split(",")[0]
+        ?.trim();
+      return originHost === requestHost || (Boolean(forwarded) && originHost === forwarded);
+    } catch {
+      return false;
+    }
+  },
 });
 
 export const startInstance = createStart(() => ({

@@ -57,7 +57,12 @@ function AdminLoginPage() {
         return;
       }
       window.location.assign("/admin");
-    } catch {
+    } catch (error) {
+      const message = error instanceof Error ? error.message.toLowerCase() : "";
+      if (message.includes("forbidden")) {
+        setError("Não foi possível validar a sessão. Recarregue a página e tente de novo.");
+        return;
+      }
       setError("Não foi possível entrar. Tente novamente.");
     } finally {
       setLoading(false);

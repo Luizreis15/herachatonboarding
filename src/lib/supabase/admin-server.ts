@@ -69,27 +69,35 @@ export const signOutAdmin = createServerFn({ method: "POST" }).handler(async () 
 export const loginAdmin = createServerFn({ method: "POST" })
   .validator(loginSchema)
   .handler(async ({ data }) => {
-    const { getSupabaseServer } = await import("./server");
-    const supabase = getSupabaseServer();
-    const { data: auth, error } = await supabase.auth.signInWithPassword({
-      email: data.email.toLowerCase(),
-      password: data.password,
-    });
+    try {
+      const { getSupabaseServer } = await import("./server");
+      const supabase = getSupabaseServer();
+      const { data: auth, error } = await supabase.auth.signInWithPassword({
+        email: data.email.toLowerCase(),
+        password: data.password,
+      });
 
-    if (error || !auth.user) {
+      if (error || !auth.user) {
+        return {
+          status: "error" as const,
+          message: mapLoginError(error?.message ?? ""),
+        };
+      }
+
+      const admin = await fetchAdminProfile(supabase, auth.user.id);
+      if (!admin) {
+        await supabase.auth.signOut();
+        return { status: "forbidden" as const };
+      }
+
+      return { status: "ok" as const };
+    } catch (error) {
+      console.error(error);
       return {
         status: "error" as const,
-        message: mapLoginError(error?.message ?? ""),
+        message: "Não foi possível entrar. Tente novamente.",
       };
     }
-
-    const admin = await fetchAdminProfile(supabase, auth.user.id);
-    if (!admin) {
-      await supabase.auth.signOut();
-      return { status: "forbidden" as const };
-    }
-
-    return { status: "ok" as const };
   });
 
 export async function ensureAdminRoute() {
